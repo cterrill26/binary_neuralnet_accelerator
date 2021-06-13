@@ -46,7 +46,7 @@ module bnn_tb();
     );
     
     
-    always #5 clk = ~clk;
+    always #1 clk = ~clk;
     
     
     initial 
@@ -58,30 +58,30 @@ module bnn_tb();
         activation_input_data = 0;
         activation_input_addr_rd = 0;
         activation_input_addr_wr = 0;
-        #20;
+        #4;
         rst = 0;
-        #200;
+        #40;
         activation_input_enb_wr = 1;
         for(int i = 0; i < 784; i++)
         begin
             activation_input_data = image[i];
             activation_input_addr_wr = i;
-            #10;
+            #2;
         end
         activation_input_enb_wr = 0;
         activation_input_data = 0;
         activation_input_addr_wr = 0;
-        #100;
-        start = 1;
         #20;
+        start = 1;
+        #4;
         start = 0;
-        #50;
+        #10;
         wait(done == 1);
-        #50;
+        #10;
         for(int i = 0; i < 10; i++) 
         begin
             activation_input_addr_rd = i + 1024;
-            #100;
+            #20;
             $display("%d: %d", i, $signed(activation_out));
         end
         $finish;    
