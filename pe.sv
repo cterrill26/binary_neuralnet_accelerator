@@ -25,15 +25,15 @@ module pe
 (
     input clk, load,
     input [15:0] weight,
-    input [WIDTH_IN-1:0] activation [15:0],
+    input [15:0][WIDTH_IN-1:0] activation,
     input [WIDTH_IN+10-1:0] accumulate_in,
     output [WIDTH_IN+10-1:0] accumulate_out
 );
 
     logic signed [WIDTH_IN+10-1:0] accumulate; //allow sums to grow 10 bits
     
-    logic [WIDTH_IN-1:0] product [15:0];
-    logic [WIDTH_IN+2-1:0] sum0 [3:0];
+    logic [15:0][WIDTH_IN-1:0] product;
+    logic [3:0][WIDTH_IN+2-1:0] sum0;
     logic [WIDTH_IN+4-1:0] sum1;
     
     always_comb 
