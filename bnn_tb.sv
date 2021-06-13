@@ -78,6 +78,12 @@ module bnn_tb();
         #50;
         wait(done == 1);
         #50;
+        for(int i = 0; i < 10; i++) 
+        begin
+            activation_input_addr_rd = i + 1024;
+            #100;
+            $display("%d: %d", i, $signed(activation_out));
+        end
         $finish;    
     end
     
