@@ -20,29 +20,40 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module add16
+module add256
 #(parameter WIDTH_IN = 8)
 (
     input clk,
-    input signed [15:0][WIDTH_IN+10:0] in,
+    input signed [255:0][WIDTH_IN+10:0] in,
     output logic signed [WIDTH_IN+10:0] out
 );
 
-    logic signed [3:0][WIDTH_IN+10:0] sum ;
+    logic signed [WIDTH_IN+10:0] sum0, sum1, sum2, sum3, sum;
     
-    generate
-        for(genvar i=1; i<5; i++) begin: adder16
-            add4 a4(
-                .clk(clk),
-                .in(in[4*i-1:4*i-4]),
-                .out(sum[i-1])
-            );        
-        end
-    endgenerate
+    add64 a0(
+        .clk(clk),
+        .in(in[255:192]),
+        .out(sum0)
+    );
+    add64 a1(
+        .clk(clk),
+        .in(in[191:128]),
+        .out(sum1)
+    );
+    add64 a2(
+        .clk(clk),
+        .in(in[127:64]),
+        .out(sum2)
+    );
+    add64 a3(
+        .clk(clk),
+        .in(in[63:0]),
+        .out(sum3)
+    );
     
     add4 a4(
         .clk(clk),
-        .in(sum),
+        .in({sum0,sum1,sum2,sum3}),
         .out(out)
     );
 

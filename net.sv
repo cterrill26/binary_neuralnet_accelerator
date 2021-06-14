@@ -26,53 +26,72 @@ module net #(
     parameter LAYER2 = 64,
     parameter OUTPUT_SIZE = 10)    
 (
-    input logic clk,
+    input clk,
     input logic rst,
     output [3:0] result,
-    output [18:0] test_out
+    output [18:0] test_out,
+    output [OUTPUT_SIZE-1:0][7:0] activations_out
     );
-    //////////// SAMPLE ///////////////////
-    reg [7:0] memory [9:0];
-    integer   index;
-    initial begin
-        $readmemb("C:\\Users\\Freddy\\binarynet\\test.txt", memory);
-        
-        for(index = 0; index < 10; index = index + 1)
-            $display("memory[%d] = %b", index[4:0], memory[index]);
-    end
-    //////////// END SAMPLE ///////////////////
+    `include "C:/Users/Freddy/bnn2/bnn2.srcs/sources_1/imports/weights.sv"  
+    `include "C:/Users/Freddy/bnn2/bnn2.srcs/sources_1/imports/activations.sv"     
+
+    logic signed  [LAYER1-1:0][7:0] activations_l1 ;
+    logic signed  [LAYER2-1:0][7:0] activations_l2 ;
     
-    reg [INPUT_SIZE-1:0] input_weights [LAYER1-1:0];
-    reg [LAYER1-1:0] layer1_weights [LAYER2-1:0];
-    reg [LAYER2-1:0] layer2_weights [OUTPUT_SIZE-1:0];
-       
-    reg  [31:0] activations_l1 [LAYER1-1:0];
-    reg  [31:0] activations_l2 [LAYER2-1:0];
-    reg  [31:0] activations_out [OUTPUT_SIZE-1:0];
     //hidden layer 1
-    //generate
+    generate
+    //Create processing elementa for each neuron in the first layer
+        for (genvar i = 0; i < LAYER1; i=i+1) begin : L1_NEURON 
+            neuron_l1 n1(
+                .clk(clk),
+                .activations(activations_in),
+                .weights(input_weights[i]),
+                .alpha(alpha1[i]),
+                .accumulated_result(activations_l1[i])
+            );
+        end
+    endgenerate
+    
+    generate
     //Create processing elementa for each element in the second layer
-    //    for (genvar i = 0; i < LAYER1; i=i+1) begin : L1_NEURON
-            
-        
-    //    end
+        for (genvar j = 0; j < LAYER2; j=j+1) begin : L2_NEURON 
+            neuron_l2 n2(
+            .clk(clk),
+                .activations(activations_l1),
+                .weights(l1_weights[j]),
+                .alpha(alpha2[j]),
+                .accumulated_result(activations_l2[j])
+            );
+        end
+    endgenerate
+
     
-    //endgenerate
+    
+    generate
+    //Create processing elementa for each element in the output layer
+        for (genvar k = 0; k < OUTPUT_SIZE; k=k+1) begin : OUT_NEURON 
+            neuron_out n3(
+            .clk(clk),
+                .activations(activations_l2),
+                .weights(out_weights[k]),
+                .alpha(alpha3[k]),
+                .accumulated_result(activations_out[k])
+            );
+        end
+    endgenerate
     
     
-    
-    logic signed [18:0] test[63:0];   
+    //ADDER TESTING
+    logic signed [127:0][18:0] test;   
     initial begin
-    for(int j = 0; j<64; j++) begin
-        test[j] = -2;
+    for(int j = 0; j<128; j++) begin
+        test[j] = 1;
     end
     end
     //output layer
-    add64 a0(
+    add128 a0(
         .clk(clk),
         .in(test),
         .out(test_out)
     );
-    
-    
 endmodule
