@@ -31,7 +31,7 @@ module ram_dp
     input [$clog2(RAM_DEPTH)-1:0] addr_wr, 
     input [$clog2(RAM_DEPTH)-1:0] addr_rd, 
     input [RAM_WIDTH-1:0] data_in,         
-    input enb_wr,                         
+    input [RAM_WIDTH-1:0] enb_wr,                         
     output [RAM_WIDTH-1:0] data_out             
 );   
     
@@ -50,10 +50,19 @@ module ram_dp
         end 
     endgenerate
     
+    
+    generate
+        for(genvar i = 0; i < RAM_WIDTH; i++) begin : bit_select
+            always_ff @(posedge clk) 
+            begin
+                if (enb_wr[i])
+                  mem[addr_wr][i] <= data_in[i];
+            end
+        end
+    endgenerate
+    
     always_ff @(posedge clk) 
     begin
-        if (enb_wr)
-          mem[addr_wr] <= data_in;
         mem_data <= mem[addr_rd];
         mem_reg <= mem_data;
     end

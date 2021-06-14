@@ -25,6 +25,9 @@ module control
     input clk, rst, start,
     output idle,
     output [15:0] load,
+    output [3:0] sum_shift,
+    output sum_enb,
+    output beta_enb,
     output logic [8:0] weight_addr_rd,
     output [6:0] activation_addr_rd,
     output [6:0] activation_addr_wr,
@@ -34,17 +37,22 @@ module control
 
     localparam int layers = 4;
     localparam int degrees [layers] = {784,128,64,10};
+    localparam [3:0] sum_shifts [layers-1] = {4'd7,4'd6,4'd0};
     
     logic [4:0] state = 1;
     logic [4:0] next_state;
     logic [1:0] start_reg = 0;
     
     logic [3:0][15:0] load_reg;
+    logic [6:0][3:0] sum_shift_reg;
+    logic [6:0] beta_enb_reg;
+    logic next_beta_enb_reg;
     logic [5:0][15:0] activation_enb_wr_reg;
     logic [15:0] next_activation_enb_wr_reg;
     logic [2:0][7:0] alpha_addr_rd_reg; 
     logic [6:0][6:0] activation_addr_wr_reg;
     logic [5:0] activation_addr_rd_reg;
+    logic [5:0] sum_enb_reg;
     
     logic [1:0] layer_num, next_layer_num;
     logic [10:0] neuron_num, next_neuron_num;
@@ -69,9 +77,12 @@ module control
     always_ff @ (posedge clk)
     begin
         load_reg[3:1] <= load_reg[2:0];
+        sum_shift_reg <= {sum_shift_reg[5:0], sum_shifts[layer_num]};
+        beta_enb_reg[6:1] <= beta_enb_reg[5:0];
         activation_enb_wr_reg[5:1] <= activation_enb_wr_reg[4:0];
         activation_addr_wr_reg[6:1] <= activation_addr_wr_reg[5:0];
         alpha_addr_rd_reg[2:1] <= alpha_addr_rd_reg[1:0]; 
+        sum_enb_reg[5:1] <= sum_enb_reg[4:0];
     end
     
     
@@ -80,6 +91,8 @@ module control
         case (state) inside
             5'b???1?, 5'b????1 : begin
                 load_reg[0] <= ~0;
+                sum_enb_reg[0] <= 0;
+                beta_enb_reg[0] <= 1;
                 weight_addr_rd <= 0;
                 activation_addr_rd_reg <= 0;
                 activation_addr_wr_reg[0] <= 0;
@@ -100,7 +113,8 @@ module control
                     else
                         load_reg[0][i] <= 1;
                 end
-                
+                sum_enb_reg[0] <= 0;
+                beta_enb_reg[0] <= 0;
                 weight_addr_rd <= weight_addr_rd + 1;
                 activation_addr_rd_reg <= activation_addr_rd_reg +1;
                 if(neuron_num == 0)
@@ -118,6 +132,8 @@ module control
             end
             5'b?1??? : begin
                 load_reg[0] <= ~0;
+                sum_enb_reg[0] <= 1;
+                beta_enb_reg[0] <= next_beta_enb_reg;
                 weight_addr_rd <= weight_addr_rd;
                 activation_addr_rd_reg <= 0;
                 
@@ -136,6 +152,8 @@ module control
             end
             5'b1???? : begin
                 load_reg[0] <= ~0;
+                sum_enb_reg[0] <= 0;
+                beta_enb_reg[0] <= 1;
                 weight_addr_rd <= 0;
                 activation_addr_rd_reg <= 0;
                 activation_addr_wr_reg[0] <= 0;
@@ -154,6 +172,7 @@ module control
     always_comb
     begin
         next_state = state;
+        next_beta_enb_reg = 0;
         next_activation_enb_wr_reg = 0;
         next_activation_enb_wr_reg[state8_counter[3:0]] = 1;
         
@@ -185,6 +204,7 @@ module control
                     //this is the last neuron group to process
                     if(state8_counter == degrees[layer_num+1] - neuron_num -1)
                     begin
+                        next_beta_enb_reg = 1;
                         if(layer_num == layers - 2)
                             next_state = 16;
                         else begin
@@ -218,7 +238,10 @@ module control
     
     
     assign idle = state[0];
+    assign sum_shift = sum_shift_reg[6];
     assign load = load_reg[3];
+    assign sum_enb = sum_enb_reg[5];
+    assign beta_enb = beta_enb_reg[6];
     assign activation_enb_wr = activation_enb_wr_reg[5];
     assign activation_addr_wr = activation_addr_wr_reg[6];
     assign activation_addr_rd = {layer_num[0], activation_addr_rd_reg};

@@ -21,29 +21,28 @@
 
 
 module bnn(
-    input clk, rst, start, activation_input_enb_wr,
-    input [7:0] activation_input_data,
-    input [10:0] activation_input_addr_rd, activation_input_addr_wr,
-    output logic [7:0] activation_out,
+    input clk, rst, start, activation_input_enb_wr, 
+    input [2:0] beta_in,
+    input [15:0] activation_input_data,
+    input [6:0] activation_input_addr_rd, activation_input_addr_wr,
+    output [15:0] activation_out,
     output done
 );
     
     logic idle;
     logic [15:0] load;
     logic [8:0] weight_addr_rd;
-    logic [7:0] activation_input;
     logic [6:0] activation_addr_rd, activation_addr_wr;
     logic [15:0] activation_enb_wr;
     logic [6:0] control_activation_addr_rd, control_activation_addr_wr;
     logic [15:0] control_activation_enb_wr;
     logic [7:0] alpha_addr_rd;
-    logic [15:0][7:0] activation_output;
+    logic [3:0] sum_shift;
+    logic sum_enb, beta_enb;
     
-    
-    logic [7:0] activation_input_data_reg;
-    logic [10:0] activation_input_addr_rd_reg, activation_input_addr_wr_reg;
+    logic [15:0] activation_input_data_reg;
+    logic [6:0] activation_input_addr_rd_reg, activation_input_addr_wr_reg;
     logic activation_input_enb_wr_reg;
-    logic [3:0] activation_input_addr_rd_reg1, activation_input_addr_rd_reg2;
     
     datapath d
     (
@@ -52,11 +51,15 @@ module bnn(
         .load(load),
         .weight_addr_rd(weight_addr_rd),
         .activation_input(activation_input_data_reg),
+        .beta_in(beta_in),
+        .sum_shift(sum_shift),
+        .sum_enb(sum_enb), 
+        .beta_enb(beta_enb),
         .activation_addr_rd(activation_addr_rd), 
         .activation_addr_wr(activation_addr_wr),
         .activation_enb_wr(activation_enb_wr),
         .alpha_addr_rd(alpha_addr_rd),
-        .activation_output(activation_output)
+        .activation_output(activation_out)
     );
     
     control c
@@ -66,6 +69,9 @@ module bnn(
         .start(start),
         .idle(idle),
         .load(load),
+        .sum_shift(sum_shift),
+        .sum_enb(sum_enb), 
+        .beta_enb(beta_enb),
         .weight_addr_rd(weight_addr_rd),
         .activation_addr_rd(control_activation_addr_rd), 
         .activation_addr_wr(control_activation_addr_wr),
@@ -81,20 +87,15 @@ module bnn(
         activation_input_data_reg <= activation_input_data;
         activation_input_addr_rd_reg <= activation_input_addr_rd;
         activation_input_addr_wr_reg <= activation_input_addr_wr;
-        activation_input_enb_wr_reg <= activation_input_enb_wr;
-        
-        activation_input_addr_rd_reg1 = activation_input_addr_rd_reg[3:0]; 
-        activation_input_addr_rd_reg2 = activation_input_addr_rd_reg1;
-        activation_out <= activation_output[activation_input_addr_rd_reg2];                     
+        activation_input_enb_wr_reg <= activation_input_enb_wr;                           
     end
     
     always_comb
     begin
         if(idle) begin
-            activation_addr_rd = activation_input_addr_rd_reg[10:4];
-            activation_addr_wr = activation_input_addr_wr_reg[10:4];
-            activation_enb_wr = 0;
-            activation_enb_wr[activation_input_addr_wr_reg[3:0]] = activation_input_enb_wr_reg;
+            activation_addr_rd = activation_input_addr_rd_reg;
+            activation_addr_wr = activation_input_addr_wr_reg;
+            activation_enb_wr = {16{activation_input_enb_wr_reg}};
         end
         else begin
             activation_addr_rd = control_activation_addr_rd;

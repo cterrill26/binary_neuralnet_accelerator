@@ -25,6 +25,9 @@ module control_tb();
     logic clk, rst, start;
     logic idle;
     logic [15:0] load;
+    logic [3:0] sum_shift;
+    logic sum_enb, beta_enb;
+    
     logic [8:0] weight_addr_rd;
     logic [6:0] activation_addr_rd;
     logic [6:0] activation_addr_wr;
@@ -38,6 +41,9 @@ module control_tb();
         .start(start),
         .idle(idle),
         .load(load),
+        .sum_shift(sum_shift),
+        .sum_enb(sum_enb), 
+        .beta_enb(beta_enb),
         .weight_addr_rd(weight_addr_rd),
         .activation_addr_rd(activation_addr_rd),
         .activation_addr_wr(activation_addr_wr),

@@ -23,20 +23,22 @@
 module bnn_tb();
     
     logic clk, rst, start, activation_input_enb_wr;
-    logic [7:0] activation_input_data;
-    logic [10:0] activation_input_addr_rd, activation_input_addr_wr;
-    logic [7:0] activation_out;
+    logic [2:0] beta_in;
+    logic [15:0] activation_input_data;
+    logic [6:0] activation_input_addr_rd, activation_input_addr_wr;
+    logic [15:0] activation_out;
     logic done;
     
-    logic [7:0] image [783:0];
+    logic [15:0] image [48:0];
     initial
-        $readmemb("image.mem", image, 0, 783);
+        $readmemb("image.mem", image, 0, 48);
     
     bnn DUT
     (
         .clk(clk),
         .rst(rst),
         .start(start),
+        .beta_in(beta_in),
         .activation_input_enb_wr(activation_input_enb_wr),
         .activation_input_data(activation_input_data),
         .activation_input_addr_rd(activation_input_addr_rd),
@@ -54,6 +56,7 @@ module bnn_tb();
         clk = 0;
         rst = 1;
         start = 0;
+        beta_in = 1; 
         activation_input_enb_wr = 0;
         activation_input_data = 0;
         activation_input_addr_rd = 0;
@@ -62,7 +65,7 @@ module bnn_tb();
         rst = 0;
         #40;
         activation_input_enb_wr = 1;
-        for(int i = 0; i < 784; i++)
+        for(int i = 0; i < 49; i++)
         begin
             activation_input_data = image[i];
             activation_input_addr_wr = i;
@@ -78,12 +81,9 @@ module bnn_tb();
         #10;
         wait(done == 1);
         #10;
-        for(int i = 0; i < 10; i++) 
-        begin
-            activation_input_addr_rd = i + 1024;
-            #20;
-            $display("%d: %d", i, $signed(activation_out));
-        end
+        activation_input_addr_rd = 64;
+        #20;
+        $display("%b", activation_out[9:0]);
         $finish;    
     end
     
